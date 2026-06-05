@@ -256,7 +256,7 @@ jobs:
       if: matrix.accel == 'cuda' && matrix.cuda == '11.8'
       run: |
         echo "Force reinstalling ctranslate2==3.24.0 for CUDA 11.8 compatibility..."
-        pip install --force-reinstall --no-deps ctranslate2==3.24.0 numpy==1.26.4
+        pip install --force-reinstall --no-deps ctranslate2==3.24.0 numpy==1.26.4 "setuptools<82"
         echo "ctranslate2 reinstalled successfully"
         python -c "import importlib.metadata as md; print(f'CTranslate2 version: {md.version(\"ctranslate2\")}')"
 
