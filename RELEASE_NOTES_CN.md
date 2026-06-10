@@ -230,6 +230,17 @@ A: 使用"低显存模式"批处理文件，或切换到CPU模式。
 
 ## 📝 更新日志
 
+### v1.8 (2026-06-10)
+- 📝 **日文原文转录支持**：新增 [Jim6789/whisper-ja-1.5B-ct2](https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2) 日文原文转录模型，无需翻译即可直接输出日文字幕
+- 📦 **三种发行包变体**：将原"基础版/海南鸡版"重构为 **无主模型版（`-nomodel`）**、**翻译版（`-translate`）**、**转录版（`-transcribe`）** 三种打包，按需下载
+- 🎛️ **翻译/转录任务选择**：新增 `--task` 参数（`translate`/`transcribe`），并拆分为 `运行(翻译)(...)` 与 `运行(转录)(...)` 两套启动脚本
+- 🖱️ **拖放交互提示**：直接双击 `.bat` 启动脚本（未拖入文件）时，会提示将音视频文件拖入窗口后回车
+- 🌐 **下载更稳定**：huggingface.co 下载失败时自动回退到 hf-mirror.com 镜像，并对 HTTP 429 限流自动退避重试
+- 🐔 **海南鸡模型地址更新**：翻译模型改用 CT2 版本仓库 [whisper-large-v2-translate-zh-v0.2-st-ct2](https://huggingface.co/chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2)
+- 🔧 **稳定性修复**：修复 CTranslate2 运行时 setuptools/pkg_resources 导入、CUDA 11.8 兼容性、批处理检测时的本地化等问题
+
+**📦 发行包选择**：自定义模型选 `-nomodel`，日文转中文选 `-translate`，日文原文转录选 `-transcribe`（详见上方"版本类型说明"）。
+
 ### v1.7 (2026-02-24)
 - 🔴 **AMD ROCm/HIP GPU 支持**：新增 AMD 显卡支持（RDNA1–RDNA4），覆盖 RX 5000 / 6000 / 7000 / 9000 系列
 - 📦 **多架构构建**：提供 gfx101x（RDNA1）、gfx103x（RDNA2）、gfx110x（RDNA3）、gfx120x（RDNA4）四种架构的打包版本
