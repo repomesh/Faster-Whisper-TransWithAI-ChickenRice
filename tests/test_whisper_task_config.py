@@ -5,11 +5,13 @@ import types
 import unittest
 from argparse import Namespace
 from pathlib import Path
+from unittest import mock
 
 sys.modules.setdefault("pyjson5", types.SimpleNamespace(decode_io=json.load))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from faster_whisper_transwithai_chickenrice.infer import Inference
+import faster_whisper_transwithai_chickenrice.infer as infer_module
+from faster_whisper_transwithai_chickenrice.infer import Inference, vad_segments_to_clip_timestamps
 
 
 def make_args(config_path: Path, task: str | None = None) -> Namespace:
@@ -62,6 +64,39 @@ class WhisperTaskConfigTests(unittest.TestCase):
             config, _segment_merge_options = inference._load_generation_config(make_args(config_path))
 
         self.assertEqual(config["task"], "translate")
+
+
+class VadClipTimestampTests(unittest.TestCase):
+    def test_converts_sample_indices_to_clip_timestamp_pairs(self) -> None:
+        clips = vad_segments_to_clip_timestamps([{"start": 16_000, "end": 32_000}])
+
+        self.assertEqual(clips, [1.0, 2.0])
+
+    def test_converts_sample_indices_to_batched_clip_dicts(self) -> None:
+        clips = vad_segments_to_clip_timestamps([{"start": 16_000, "end": 32_000}], batched=True)
+
+        self.assertEqual(clips, [{"start": 1.0, "end": 2.0}])
+
+    def test_prepare_transcription_uses_vad_clips_for_translate(self) -> None:
+        inference = Inference.__new__(Inference)
+        inference.generation_config = {
+            "language": "ja",
+            "task": "translate",
+            "vad_filter": True,
+            "vad_parameters": {"threshold": 0.5},
+        }
+        inference.vad_manager = mock.Mock()
+        inference.vad_manager.get_speech_timestamps.return_value = [{"start": 16_000, "end": 32_000}]
+
+        with mock.patch.object(infer_module, "decode_audio", return_value=[0] * 32_000):
+            audio, config, duration_after_vad = inference._prepare_transcription("audio.mp3", batched=False)
+
+        self.assertEqual(len(audio), 32_000)
+        self.assertEqual(duration_after_vad, 1.0)
+        self.assertFalse(config["vad_filter"])
+        self.assertEqual(config["clip_timestamps"], [1.0, 2.0])
+        self.assertEqual(config["beam_size"], 1)
+        self.assertFalse(config["condition_on_previous_text"])
 
 
 if __name__ == "__main__":

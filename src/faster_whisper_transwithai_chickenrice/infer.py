@@ -15,6 +15,7 @@ import traceback
 from collections import ChainMap
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pyjson5
@@ -26,10 +27,12 @@ _CTRANSLATE2_IMPORT_ERROR = None
 
 try:
     from faster_whisper import BatchedInferencePipeline, WhisperModel
+    from faster_whisper.audio import decode_audio
 except Exception as e:
     _FASTER_WHISPER_IMPORT_ERROR = e
     WhisperModel = None
     BatchedInferencePipeline = None
+    decode_audio = None
 
 try:
     import ctranslate2
@@ -41,7 +44,7 @@ except Exception as e:
 # Import modern i18n module for translations
 from . import i18n_modern as i18n
 from . import inject_vad, uninject_vad
-from .vad_manager import VadConfig
+from .vad_manager import VadConfig, VadModelManager
 
 # Convenience imports
 _ = i18n._
@@ -49,6 +52,7 @@ format_duration = i18n.format_duration
 format_percentage = i18n.format_percentage
 
 WHISPER_TASKS = ("transcribe", "translate")
+WHISPER_SAMPLING_RATE = 16_000
 
 
 def _normalize_whisper_task(task: Any) -> str:
@@ -71,7 +75,7 @@ def _require_ctranslate2():
 
 
 def _require_faster_whisper():
-    if WhisperModel is None or BatchedInferencePipeline is None:
+    if WhisperModel is None or BatchedInferencePipeline is None or decode_audio is None:
         raise RuntimeError(
             f"Failed to import faster_whisper. This build may be missing required runtime libraries. "
             f"Original error: {_FASTER_WHISPER_IMPORT_ERROR}"
@@ -267,6 +271,27 @@ def _normalize_merge_text(text: str) -> str:
     return " ".join(text.strip().split())
 
 
+def vad_segments_to_clip_timestamps(
+    vad_segments: list[dict[str, Any]], sampling_rate: int = WHISPER_SAMPLING_RATE, *, batched: bool = False
+) -> list[float] | list[dict[str, float]]:
+    if batched:
+        clips = []
+        for segment in vad_segments:
+            start = float(segment["start"]) / sampling_rate
+            end = float(segment["end"]) / sampling_rate
+            if end > start:
+                clips.append({"start": start, "end": end})
+        return clips
+
+    clips = []
+    for segment in vad_segments:
+        start = float(segment["start"]) / sampling_rate
+        end = float(segment["end"]) / sampling_rate
+        if end > start:
+            clips.extend([start, end])
+    return clips
+
+
 def merge_segments(segments: list[Segment], options: SegmentMergeOptions | None = None) -> list[Segment]:
     if options is None:
         options = SegmentMergeOptions()
@@ -411,6 +436,8 @@ class Inference:
     def __init__(self, args):
         self.args = args
         self.model_name_or_path = args.model_name_or_path
+        self.vad_injected = False
+        self.vad_manager = None
         self.device = (args.device or "auto").strip().lower()
         if self.device in {"amd", "rocm", "hip"}:
             # CTranslate2 HIP backend still uses the public device name "cuda".
@@ -620,6 +647,11 @@ class Inference:
         vad_config.num_threads = 8
 
         # Inject VAD with progress callback
+        self.vad_manager = VadModelManager(
+            config=vad_config,
+            ttl=vad_config.ttl,
+            progress_callback=self._vad_progress_callback,
+        )
         inject_vad(
             model_id=vad_model,
             config=vad_config,
@@ -627,6 +659,51 @@ class Inference:
         )
         self.vad_injected = True
         logger.info(_("info.vad_activated", threshold=vad_config.threshold))
+
+    def _prepare_transcription(self, audio_path: str, *, batched: bool) -> tuple[Any, dict[str, Any], float | None]:
+        config = dict(self.generation_config)
+
+        if not config.get("vad_filter") or "clip_timestamps" in config:
+            return audio_path, config, None
+
+        if self.vad_manager is None:
+            return audio_path, config, None
+
+        audio = decode_audio(audio_path, sampling_rate=WHISPER_SAMPLING_RATE)
+        vad_parameters = config.get("vad_parameters") or {}
+        vad_segments = self.vad_manager.get_speech_timestamps(
+            model_id="whisper_vad",
+            audio=audio,
+            sampling_rate=WHISPER_SAMPLING_RATE,
+            **vad_parameters,
+        )
+        duration_after_vad = sum(segment["end"] - segment["start"] for segment in vad_segments) / WHISPER_SAMPLING_RATE
+
+        config["vad_filter"] = False
+        config["clip_timestamps"] = vad_segments_to_clip_timestamps(
+            vad_segments,
+            WHISPER_SAMPLING_RATE,
+            batched=batched,
+        )
+        config.setdefault("beam_size", 1)
+        config.setdefault("condition_on_previous_text", False)
+
+        return audio, config, duration_after_vad
+
+    def _log_duration(self, duration: float, duration_after_vad: float) -> None:
+        if duration == duration_after_vad or duration_after_vad == 0:
+            logger.info(_("info.duration", duration=format_duration(duration)))
+            return
+
+        rate = duration_after_vad / duration
+        logger.info(
+            _(
+                "info.duration_filtered",
+                original=format_duration(duration),
+                filtered=format_duration(duration_after_vad),
+                percent=format_percentage(rate),
+            )
+        )
 
     def generates(self, base_dirs):
         if len(base_dirs) == 0:
@@ -691,6 +768,11 @@ class Inference:
                     )
                 )
 
+                audio_input, transcription_config, manual_duration_after_vad = self._prepare_transcription(
+                    task.audio_path,
+                    batched=bool(batched_model and batch_size_to_use > 0),
+                )
+
                 # Use batched or regular inference
                 if batched_model and batch_size_to_use > 0:
                     # Use auto-retry with batch size reduction on OOM
@@ -698,7 +780,8 @@ class Inference:
                     try:
                         _segments, info, actual_batch_size = self._transcribe_with_auto_batch_size(
                             batched_model,
-                            task.audio_path,
+                            audio_input,
+                            transcription_config,
                             starting_batch_size=batch_size_to_use,
                         )
                         # Update batch_size_to_use if it was auto-adjusted
@@ -708,28 +791,31 @@ class Inference:
                     except Exception as e:
                         logger.warning(f"Batched inference failed: {str(e)}. Falling back to non-batched mode.")
                         # Fallback to non-batched
-                        _segments, info = model.transcribe(
+                        audio_input, transcription_config, manual_duration_after_vad = self._prepare_transcription(
                             task.audio_path,
-                            **self.generation_config,
+                            batched=False,
+                        )
+                        _segments, info = model.transcribe(
+                            audio_input,
+                            **transcription_config,
                         )
                 else:
-                    _segments, info = model.transcribe(
-                        task.audio_path,
-                        **self.generation_config,
-                    )
+                    if manual_duration_after_vad == 0:
+                        _segments = []
+                        info = SimpleNamespace(
+                            duration=len(audio_input) / WHISPER_SAMPLING_RATE,
+                            duration_after_vad=0,
+                        )
+                    else:
+                        _segments, info = model.transcribe(
+                            audio_input,
+                            **transcription_config,
+                        )
 
-                if info.duration == info.duration_after_vad or info.duration_after_vad == 0:
-                    logger.info(_("info.duration", duration=format_duration(info.duration)))
-                else:
-                    rate = info.duration_after_vad / info.duration
-                    logger.info(
-                        _(
-                            "info.duration_filtered",
-                            original=format_duration(info.duration),
-                            filtered=format_duration(info.duration_after_vad),
-                            percent=format_percentage(rate),
-                        )
-                    )
+                duration_after_vad = (
+                    manual_duration_after_vad if manual_duration_after_vad is not None else info.duration_after_vad
+                )
+                self._log_duration(info.duration, duration_after_vad)
 
                 segments = []
                 for _segment in _segments:
@@ -852,7 +938,7 @@ class Inference:
         logger.error(_("batch.no_suitable_size", min_size=min_batch_size))
         return 0
 
-    def _transcribe_with_auto_batch_size(self, batched_model, audio_path, starting_batch_size=None):
+    def _transcribe_with_auto_batch_size(self, batched_model, audio_path, generation_config, starting_batch_size=None):
         """
         Transcribe with automatic batch size reduction on OOM.
         Similar to HuggingFace Accelerate's find_executable_batch_size decorator.
@@ -876,7 +962,7 @@ class Inference:
                 logger.debug(_("batch.attempting_transcription", size=batch_size))
 
                 # Try transcription with current batch size
-                segments, info = batched_model.transcribe(audio_path, batch_size=batch_size, **self.generation_config)
+                segments, info = batched_model.transcribe(audio_path, batch_size=batch_size, **generation_config)
 
                 # Success! Return results with the batch size that worked
                 if batch_size < (starting_batch_size or self.batch_size or 32):
