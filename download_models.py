@@ -478,10 +478,10 @@ Examples:
   %(prog)s --hf-model chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2
     # Download VAD, whisper-base, and Chickenrice Whisper model
 
-  %(prog)s --hf-model Jim6789/whisper-ja-1.5B-ct2
-    # Download VAD, whisper-base, and Jim Japanese transcribe model
+  %(prog)s --hf-model TransWithAI/whisper-ja-1.5B-ct2
+    # Download VAD, whisper-base, and TransWithAI Japanese transcribe bf16 model
 
-  %(prog)s --hf-model Jim6789/whisper-ja-1.5B-ct2 --target-dir .
+  %(prog)s --hf-model TransWithAI/whisper-ja-1.5B-ct2 --target-dir .
     # Download the main model directly into models/ for the default .bat launchers
 
   %(prog)s --hf-model openai/whisper-large-v3 --target-dir whisper-v3

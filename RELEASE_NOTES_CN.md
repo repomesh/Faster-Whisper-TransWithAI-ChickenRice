@@ -43,7 +43,7 @@
   - ✅ 所有 GPU 依赖项
   - ✅ 音声优化 VAD（语音活动检测）ONNX 模型
   - ✅ whisper-base 特征提取文件（离线使用）
-  - ✅ **Jim6789/whisper-ja-1.5B-ct2** 日文原文转录模型
+  - ✅ **TransWithAI/whisper-ja-1.5B-ct2** 日文原文转录 bf16 模型
   - ✅ 仅包含转录 `.bat` 启动脚本
 - **适用场景**：开箱即用的日文原文转录
 
@@ -141,7 +141,7 @@ AMD 显卡用户请下载带有 `gfx***` 后缀的版本。AMD 版本已内置 R
 1. **从 Hugging Face 下载模型**
    - 示例模型地址：https://huggingface.co/chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2
    - 这是"海南鸡v2 5000小时"版本的日文转中文优化模型
-   - 日文转录模型地址：https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2
+   - 日文转录模型地址：https://huggingface.co/TransWithAI/whisper-ja-1.5B-ct2
 
 2. **放置模型文件**
    ```
@@ -175,7 +175,7 @@ AMD 显卡用户请下载带有 `gfx***` 后缀的版本。AMD 版本已内置 R
 转录版已包含：
 - ✅ 音声优化 VAD 语音活动检测模型
 - ✅ whisper-base 特征提取文件（离线使用）
-- ✅ Jim6789/whisper-ja-1.5B-ct2 日文原文转录模型
+- ✅ TransWithAI/whisper-ja-1.5B-ct2 日文原文转录 bf16 模型
 - ✅ 所有必要的配置文件
 
 **无需额外下载**，解压后直接运行 `运行(转录)...bat` 即可使用！
@@ -218,7 +218,7 @@ AMD 显卡用户请下载带有 `gfx***` 后缀的版本。AMD 版本已内置 R
 A: 运行 `nvidia-smi` 查看您的驱动版本，然后对照上表选择。
 
 **Q: 三种模型包有什么区别？**
-A: 无主模型版不含主 Whisper 模型但包含两套启动脚本；翻译版包含海南鸡日文转中文模型和翻译脚本；转录版包含 Jim 日文转录模型和转录脚本。
+A: 无主模型版不含主 Whisper 模型但包含两套启动脚本；翻译版包含海南鸡日文转中文模型和翻译脚本；转录版包含 TransWithAI 日文转录 bf16 模型和转录脚本。
 
 **Q: RTX 4090 应该用哪个版本？**
 A: 推荐使用 CUDA 12.2 或 12.8 版本，取决于您的驱动版本。
@@ -234,7 +234,7 @@ A: 使用"低显存模式"批处理文件，或切换到CPU模式。
 - 🎯 **转录时间轴稳定性修复**：改用外部 VAD（`VadModelManager`）预先计算语音区间，并以 `clip_timestamps` 显式传入 faster-whisper，替代其内部 `vad_filter`；在批处理与非批处理模式下都能避免 Whisper 时间戳坍缩/错乱，字幕时间轴更稳定
 
 ### v1.8 (2026-06-10)
-- 📝 **日文原文转录支持**：新增 [Jim6789/whisper-ja-1.5B-ct2](https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2) 日文原文转录模型，无需翻译即可直接输出日文字幕
+- 📝 **日文原文转录支持**：新增 [TransWithAI/whisper-ja-1.5B-ct2](https://huggingface.co/TransWithAI/whisper-ja-1.5B-ct2) 日文原文转录 bf16 模型（由 [efwkjn/whisper-ja-1.5B](https://huggingface.co/efwkjn/whisper-ja-1.5B) 原版模型转换而来），无需翻译即可直接输出日文字幕
 - 📦 **三种发行包变体**：将原"基础版/海南鸡版"重构为 **无主模型版（`-nomodel`）**、**翻译版（`-translate`）**、**转录版（`-transcribe`）** 三种打包，按需下载
 - 🎛️ **翻译/转录任务选择**：新增 `--task` 参数（`translate`/`transcribe`），并拆分为 `运行(翻译)(...)` 与 `运行(转录)(...)` 两套启动脚本
 - 🖱️ **拖放交互提示**：直接双击 `.bat` 启动脚本（未拖入文件）时，会提示将音视频文件拖入窗口后回车
@@ -351,7 +351,8 @@ A: 使用"低显存模式"批处理文件，或切换到CPU模式。
 ### 🔗 官方链接
 - **GitHub仓库**: https://github.com/TransWithAI/Faster-Whisper-TransWithAI-ChickenRice
 - **海南鸡翻译模型**: https://huggingface.co/chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2
-- **Jim 日文转录模型**: https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2
+- **TransWithAI 日文转录模型**: https://huggingface.co/TransWithAI/whisper-ja-1.5B-ct2
+- **日文转录原版模型**: https://huggingface.co/efwkjn/whisper-ja-1.5B
 - **音声优化 VAD 模型**: https://huggingface.co/TransWithAI/Whisper-Vad-EncDec-ASMR-onnx
 - **Telegram群组**: https://t.me/transWithAI
 - **开发团队**: AI汉化组
@@ -362,7 +363,7 @@ A: 使用"低显存模式"批处理文件，或切换到CPU模式。
 
 - 🚀 基于 [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper) 开发
 - 🐔 使用 [chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2](https://huggingface.co/chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2) 日文转中文优化模型
-- 📝 可使用 [Jim6789/whisper-ja-1.5B-ct2](https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2) 日文原文转录模型
+- 📝 可使用 [TransWithAI/whisper-ja-1.5B-ct2](https://huggingface.co/TransWithAI/whisper-ja-1.5B-ct2) 日文原文转录 bf16 模型，由 [efwkjn/whisper-ja-1.5B](https://huggingface.co/efwkjn/whisper-ja-1.5B) 原版模型转换而来
 - 🔊 使用 [TransWithAI/Whisper-Vad-EncDec-ASMR-onnx](https://huggingface.co/TransWithAI/Whisper-Vad-EncDec-ASMR-onnx) 音声优化 VAD 模型
 - 🎙️ [OpenAI Whisper](https://github.com/openai/whisper) 原始项目
 - ☁️ 感谢 [@Randomless](https://github.com/Randomless) 贡献 Modal 云端推理功能

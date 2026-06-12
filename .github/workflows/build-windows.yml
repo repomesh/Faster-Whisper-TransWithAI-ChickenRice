@@ -110,7 +110,7 @@ jobs:
             model_dir: "whisper-large-v2-translate-zh-v0.2-st-ct2"
           - model_variant: "transcribe"
             artifact_model_suffix: "transcribe"
-            hf_model: "--hf-model Jim6789/whisper-ja-1.5B-ct2 --target-dir whisper-ja-1.5B-ct2"
+            hf_model: "--hf-model TransWithAI/whisper-ja-1.5B-ct2 --target-dir whisper-ja-1.5B-ct2"
             model_dir: "whisper-ja-1.5B-ct2"
 
     steps:

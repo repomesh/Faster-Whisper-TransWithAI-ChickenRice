@@ -175,10 +175,10 @@ MODEL_PRESETS: dict[str, ModelProfile] = {
     ),
     "jim-ja-transcribe": ModelProfile(
         key="jim-ja-transcribe",
-        label="Jim 日文转录（whisper-ja-1.5B）",
-        hf_repo="Jim6789/whisper-ja-1.5B-ct2",
+        label="TransWithAI 日文转录（whisper-ja-1.5B bf16）",
+        hf_repo="TransWithAI/whisper-ja-1.5B-ct2",
         target_dir="whisper-ja-1.5B-ct2",
-        description="日文原文转录模型，建议 L40S 以上",
+        description="日文原文转录 bf16 模型，建议 L40S 以上",
         task="transcribe",
     ),
     "base": ModelProfile(

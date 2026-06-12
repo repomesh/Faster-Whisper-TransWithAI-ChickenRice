@@ -21,7 +21,7 @@ High-performance audio/video transcription and translation tool - Japanese-to-Ch
 
 - 🚀 基于 [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper) 开发
 - 🐔 使用 [chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2](https://huggingface.co/chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2) 日文转中文优化模型
-- 📝 可使用 [Jim6789/whisper-ja-1.5B-ct2](https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2) 日文原文转录模型
+- 📝 可使用 [TransWithAI/whisper-ja-1.5B-ct2](https://huggingface.co/TransWithAI/whisper-ja-1.5B-ct2) 日文原文转录 bf16 模型，由 [efwkjn/whisper-ja-1.5B](https://huggingface.co/efwkjn/whisper-ja-1.5B) 原版模型转换而来
 - 🔊 使用 [TransWithAI/Whisper-Vad-EncDec-ASMR-onnx](https://huggingface.co/TransWithAI/Whisper-Vad-EncDec-ASMR-onnx) 音声优化 VAD 模型
 - ☁️ 感谢 [@Randomless](https://github.com/Randomless) 贡献 Modal 云端推理功能
 - 💪 **感谢某匿名群友的算力和技术支持**
@@ -58,7 +58,7 @@ High-performance audio/video transcription and translation tool - Japanese-to-Ch
 - ✅ 所有 GPU 依赖项
 - ✅ 音声优化 VAD（语音活动检测）模型
 - ✅ whisper-base 特征提取文件（离线使用）
-- ✅ **Jim6789/whisper-ja-1.5B-ct2** 日文原文转录模型（开箱即用）
+- ✅ **TransWithAI/whisper-ja-1.5B-ct2** 日文原文转录 bf16 模型（开箱即用）
 - ✅ 仅包含转录 `.bat` 启动脚本
 
 ## 🚀 快速开始 / Quick Start
@@ -239,7 +239,8 @@ python modal_infer.py
 
 - **Faster Whisper**: https://github.com/SYSTRAN/faster-whisper
 - **海南鸡模型**: https://huggingface.co/chickenrice0721/whisper-large-v2-translate-zh-v0.2-st-ct2
-- **Jim 日文转录模型**: https://huggingface.co/Jim6789/whisper-ja-1.5B-ct2
+- **TransWithAI 日文转录模型**: https://huggingface.co/TransWithAI/whisper-ja-1.5B-ct2
+- **日文转录原版模型**: https://huggingface.co/efwkjn/whisper-ja-1.5B
 - **音声优化 VAD 模型**: https://huggingface.co/TransWithAI/Whisper-Vad-EncDec-ASMR-onnx
 - **OpenAI Whisper**: https://github.com/openai/whisper
 - **Modal 云端平台**: https://modal.com/
